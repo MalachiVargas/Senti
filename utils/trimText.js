@@ -6,6 +6,10 @@ const trimText = (response, find = '==') => {
 		obj = response;
 	}
 	const index = obj.indexOf(find);
-	return obj.slice(0, index);
+	if (find == '==') {
+		return trimText(obj.slice(0, index), 'Human:');
+	} else {
+		return obj.slice(0, index);
+	}
 };
 exports.trimText = trimText;
