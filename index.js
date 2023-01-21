@@ -2,13 +2,8 @@
 require('dotenv').config();
 const { checkEnvVariables } = require('./utils/checkEnvVariables');
 const { client } = require('./utils/client');
-const { pingCommand } = require('./commands/ping/pingCommand');
 const keepAlive = require('./utils/server');
-const { suggestCommand } = require('./commands/suggest/suggestCommand');
-const { summarizeCommand } = require('./commands/summarize/summarizeCommand');
-
-// Array of Command objects
-const cmds = [suggestCommand, pingCommand, summarizeCommand];
+const { cmds } = require('./commands');
 
 // Interaction Create Event
 client.on('interactionCreate', async interaction => {
