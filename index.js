@@ -14,11 +14,10 @@ const cmds = [suggestCommand, pingCommand, summarizeCommand];
 client.on('interactionCreate', async interaction => {
 	if (interaction.isCommand()) {
 		cmds.forEach(async command => {
-			if (interaction.commandName == command.name) {
+			if (interaction.commandName === command.name) {
 				try {
 					await command.execute(interaction);
-				}
-				catch (error) {
+				} catch (error) {
 					console.error(error);
 				}
 			}

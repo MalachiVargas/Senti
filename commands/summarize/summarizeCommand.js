@@ -1,8 +1,9 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { client } = require('../../utils/client');
 const cohere = require('cohere-ai');
+const { client } = require('../../utils/client');
 const { trimText } = require('../../utils/trimText');
 const { summarizeModel } = require('./summarizeModel');
+
 cohere.init(process.env.COHERE);
 
 const summarizeCommand = {
