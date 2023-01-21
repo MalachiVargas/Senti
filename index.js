@@ -1,24 +1,21 @@
 // Requirements and Variables
-require('dotenv').config();
+require("dotenv").config();
+const { Client } = require("discord.js");
+const { pingCommand } = require("./pingCommand");
 const keepAlive = require(`./server`);
-const { Client } = require('discord.js');
+const { suggestCommand } = require("./suggestCommand");
 const client = new Client({ intents: 32767 });
 
 // Array of Command objects
-const cmds = [{
-  name: `ping`, // Command name
-  description: `Ping!`, // Command description
-  async execute(interaction) { // Execute function
-    await interaction.reply({
-      content: `Pong.`
-    });
-  }
-}]
+const cmds = [
+  suggestCommand,
+  pingCommand
+];
 
 // Interaction Create Event
-client.on('interactionCreate', async interaction => {
+client.on("interactionCreate", async (interaction) => {
   if (interaction.isCommand()) {
-    await cmds.forEach(async command => {
+    cmds.forEach(async (command) => {
       if (interaction.commandName == command.name) {
         try {
           await command.execute(interaction);
@@ -31,13 +28,11 @@ client.on('interactionCreate', async interaction => {
 });
 
 // Ready Event
-client.on('ready', async () => {
+client.on("ready", async () => {
   console.log(`Testing bot is now online successfully!`);
-  await client.guilds.cache
-    .get(process.env['serverId'])
-    .commands.set(cmds);
+  await client.guilds.cache.get(process.env["serverId"]).commands.set(cmds);
 });
 
 // Bot Login
-client.login(process.env['TOKEN']);
+client.login(process.env["TOKEN"]);
 keepAlive();
