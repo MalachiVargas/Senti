@@ -1,11 +1,10 @@
 // Requirements and Variables
 require("dotenv").config();
-const { Client } = require("discord.js");
+const { client } = require("./client");
 const { pingCommand } = require("./pingCommand");
 const keepAlive = require(`./server`);
 const { suggestCommand } = require("./suggestCommand");
-const client = new Client({ intents: 32767 });
-
+const { summarizeCommand } = require("./summarizeCommand");
 if (!process.env.SERVER_ID || !process.env.TOKEN || !process.env.COHERE) {
   console.error(
     "Error: TOKEN || SERVER_ID || COHERE environment variable is not set"
@@ -14,7 +13,7 @@ if (!process.env.SERVER_ID || !process.env.TOKEN || !process.env.COHERE) {
 }
 
 // Array of Command objects
-const cmds = [suggestCommand, pingCommand];
+const cmds = [suggestCommand, pingCommand, summarizeCommand];
 
 // Interaction Create Event
 client.on("interactionCreate", async (interaction) => {

@@ -26,6 +26,10 @@ const suggestCommand = {
             presence_penalty: 0,
             stop_sequences: [],
             return_likelihoods: "NONE",
+        }).catch(async () => {
+            await interaction.editReply({
+                content: `Error with COHERE`,
+            });
         });
 
         const index = response.body.generations[0].text.indexOf("==");
