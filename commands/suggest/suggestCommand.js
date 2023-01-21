@@ -19,7 +19,7 @@ const suggestCommand = {
 			.generate({
 				model: 'xlarge',
 				prompt: suggesModel(input),
-				max_tokens: 150,
+				max_tokens: 300,
 				temperature: 0.4,
 				k: 0,
 				p: 0.75,
