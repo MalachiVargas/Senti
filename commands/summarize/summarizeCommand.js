@@ -52,8 +52,12 @@ const summarizeCommand = {
 						});
 					});
 
+				const text = trimText(response);
+				if (text == '-' || text.length <= 5) {
+					throw new Error('Empty');
+				}
 				await interaction.editReply({
-					content: `Summary: ${trimText(response)}`,
+					content: `Summary: ${text}`,
 				});
 			})
 			.catch(async () => {
