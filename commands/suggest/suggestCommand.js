@@ -35,7 +35,7 @@ const suggestCommand = {
 			});
 
 		await interaction.editReply({
-			content: `Prediction: ${trimText(response)}`,
+			content: `Prediction: ${trimText(trimText(response), 'Human:')}`,
 		});
 	},
 };
