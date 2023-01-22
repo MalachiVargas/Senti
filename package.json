@@ -5,6 +5,8 @@
 	"main": "index.js",
 	"scripts": {
 		"lint": "eslint . --fix",
+		"prettier": "prettier --write .",
+		"fix": "npm run lint && npm run prettier",
 		"start": "node index.js",
 		"dev": "nodemon index.js",
 		"test": "echo \"Error: no test specified\" && exit 1"

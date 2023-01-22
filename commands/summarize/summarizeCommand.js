@@ -1,7 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const cohere = require('cohere-ai');
 const { client } = require('../../utils/client');
-const { trimText } = require('../../utils/trimText');
 const { summarizeModel } = require('./summarizeModel');
 
 cohere.init(process.env.COHERE);
@@ -17,33 +16,38 @@ const summarizeCommand = {
 	async execute(interaction) {
 		const channel = client.channels.cache.get(interaction.channel.id);
 		const input = interaction.options.getInteger('number');
-		await interaction.deferReply();
+		await interaction.deferReply({
+			ephemeral: true,
+		});
 		let messagesTxt = '';
+		const users = [];
 		await channel.messages
-			.fetch({ limit: input })
+			.fetch({ limit: input + 1 })
 			.then(messages => {
 				messages.forEach(message => {
-					messagesTxt += message.content;
+					messagesTxt += `${message.author.username}\n${message.content}\n`;
+					users.push(message.author.username);
 				});
 			})
 			.then(async () => {
-				if (messagesTxt === '') {
-					throw new Error('Empty');
+				if (messagesTxt.trim() === '') {
+					throw new Error('Could Not Retrieve Messages');
 				}
 				await interaction.editReply({
 					content: 'Generating Response...',
 				});
+				const inputUser = [...new Set(users)].join(', ');
 				const response = await cohere
 					.generate({
-						model: 'xlarge',
-						prompt: summarizeModel(input),
-						max_tokens: 300,
-						temperature: 0.6,
+						model: 'command-xlarge-nightly',
+						prompt: summarizeModel(inputUser, messagesTxt),
+						max_tokens: 600,
+						temperature: 1.1,
 						k: 0,
-						p: 1,
+						p: 0.75,
 						frequency_penalty: 0,
 						presence_penalty: 0,
-						stop_sequences: ['--'],
+						stop_sequences: ['Human:'],
 						return_likelihoods: 'NONE',
 					})
 					.catch(async () => {
@@ -52,15 +56,16 @@ const summarizeCommand = {
 						});
 					});
 
-				const text = trimText(response);
+				const text = response.body.generations[0].text;
 				if (text == '-' || text.length <= 5) {
 					throw new Error('Empty');
 				}
 				await interaction.editReply({
-					content: `Summary: ${text}`,
+					content: `**Users:**\n\n${inputUser}\n\n**Messages:**\n\n${messagesTxt}\n\n**Reply:**\n${text}`,
 				});
 			})
-			.catch(async () => {
+			.catch(async error => {
+				console.log(error);
 				await interaction.editReply({
 					content: `Error Generating Response with ${input} please increase input.`,
 				});

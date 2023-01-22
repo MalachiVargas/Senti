@@ -1,7 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const cohere = require('cohere-ai');
 const { suggesModel } = require('./suggesModel');
-const { trimText } = require('../../utils/trimText');
 
 cohere.init(process.env.COHERE);
 
@@ -13,19 +12,21 @@ const suggestCommand = {
 			option.setName('input').setDescription('The input text you want me to respond to.').setRequired(true),
 		),
 	async execute(interaction) {
-		await interaction.deferReply();
+		await interaction.deferReply({
+			ephemeral: true,
+		});
 		const input = interaction.options.getString('input');
 		const response = await cohere
 			.generate({
 				model: 'command-xlarge-nightly',
 				prompt: suggesModel(input),
 				max_tokens: 650,
-				temperature: 0.4,
+				temperature: 1.1,
 				k: 0,
 				p: 0.75,
 				frequency_penalty: 0,
 				presence_penalty: 0,
-				stop_sequences: [],
+				stop_sequences: ['Human:'],
 				return_likelihoods: 'NONE',
 			})
 			.catch(async () => {
@@ -34,7 +35,7 @@ const suggestCommand = {
 				});
 			});
 
-		const text = trimText(response);
+		const text = response.body.generations[0].text;
 		if (text == '-' || text.length <= 5) {
 			await interaction.editReply({
 				content: 'Error With Suggest Please ReSubmit',
