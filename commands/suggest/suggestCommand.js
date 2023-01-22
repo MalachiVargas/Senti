@@ -17,9 +17,9 @@ const suggestCommand = {
 		const input = interaction.options.getString('input');
 		const response = await cohere
 			.generate({
-				model: 'xlarge',
+				model: 'command-xlarge-nightly',
 				prompt: suggesModel(input),
-				max_tokens: 300,
+				max_tokens: 650,
 				temperature: 0.4,
 				k: 0,
 				p: 0.75,
@@ -41,7 +41,7 @@ const suggestCommand = {
 			});
 		} else {
 			await interaction.editReply({
-				content: `Prediction: ${text}`,
+				content: `${input} ${text}`,
 			});
 		}
 	},
