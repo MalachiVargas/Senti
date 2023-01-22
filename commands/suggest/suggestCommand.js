@@ -12,7 +12,9 @@ const suggestCommand = {
 			option.setName('input').setDescription('The input text you want me to respond to.').setRequired(true),
 		),
 	async execute(interaction) {
-		await interaction.deferReply();
+		await interaction.deferReply({
+			ephemeral: true,
+		});
 		const input = interaction.options.getString('input');
 		const response = await cohere
 			.generate({
