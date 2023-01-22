@@ -34,7 +34,7 @@ const suggestCommand = {
 				});
 			});
 
-		const text = trimText(trimText(response), 'Human:');
+		const text = trimText(response);
 		if (text == '-' || text.length <= 5) {
 			await interaction.editReply({
 				content: 'Error With Suggest Please ReSubmit',
