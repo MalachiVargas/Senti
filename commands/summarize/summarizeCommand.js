@@ -1,7 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const cohere = require('cohere-ai');
 const { client } = require('../../utils/client');
-const { trimText } = require('../../utils/trimText');
 const { summarizeModel } = require('./summarizeModel');
 
 cohere.init(process.env.COHERE);
@@ -52,7 +51,7 @@ const summarizeCommand = {
 						});
 					});
 
-				const text = trimText(response);
+				const text = response.body.generations[0].text;
 				if (text == '-' || text.length <= 5) {
 					throw new Error('Empty');
 				}
