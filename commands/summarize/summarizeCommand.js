@@ -25,7 +25,7 @@ const summarizeCommand = {
 			.fetch({ limit: input + 1 })
 			.then(messages => {
 				messages.forEach(message => {
-					messagesTxt += `${message.author.username}\n${message.content}\n`;
+					messagesTxt = `${message.author.username}\n${message.content}\n${messagesTxt}`;
 					users.push(message.author.username);
 				});
 			})
