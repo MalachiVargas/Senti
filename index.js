@@ -34,23 +34,34 @@ client.on('messageCreate', async msg => {
 		};
 		let text;
 		let sessionId;
-		await fetch('https://api.cohere.ai/chat', {
-			method: 'POST',
-			body: JSON.stringify(data),
-			headers: {
-				'Content-Type': 'application/json',
-				'Authorization': `Bearer ${process.env.COHERE}`,
-			},
-		}).then(res => res.json())
-			.then(res => {
-				text = res.reply;
-				sessionId = res.session_id;
-				console.log('Success:', JSON.stringify(res));
-			})
-			.catch(error => console.error('Error:', error));
 
-		if (text == '-' || text.length <= 5) {
+		try {
+			const res = await fetch('https://api.cohere.ai/chat', {
+				method: 'POST',
+				body: JSON.stringify(data),
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${process.env.COHERE}`,
+				},
+			});
+
+			if (res.status !== 200) {
+				throw new Error(`Error with API, status code: ${res.status}`);
+			}
+
+			const jsonRes = await res.json();
+			text = jsonRes.reply;
+			sessionId = jsonRes.session_id;
+			console.log('Success:', JSON.stringify(jsonRes));
+		}
+		catch (error) {
+			console.error('Error:', error);
 			await msg.author.send('Error With express Please ReSubmit');
+			return;
+		}
+
+		if (text | text == '-' || text.length <= 5) {
+			await msg.author.send('Error With chat please re-submit');
 		}
 		else {
 			await msg.author.send(`${text}\n${sessionId}`);
