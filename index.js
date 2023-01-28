@@ -5,6 +5,7 @@ const { client } = require('./utils/client');
 const keepAlive = require('./utils/server');
 const { cmds } = require('./commands');
 const { chatModel } = require('./commands/chat/chatModel');
+const { sessionIds } = require('./sessionIds');
 
 // Interaction Create Event
 client.on('interactionCreate', async interaction => {
@@ -13,6 +14,18 @@ client.on('interactionCreate', async interaction => {
 			if (interaction.commandName === command.name) {
 				try {
 					await command.execute(interaction);
+				}
+				catch (error) {
+					console.error(error);
+				}
+			}
+		});
+	}
+	else if (interaction.isAutocomplete()) {
+		cmds.forEach(async command => {
+			if (interaction.commandName === command.name) {
+				try {
+					await command.autocomplete(interaction);
 				}
 				catch (error) {
 					console.error(error);
@@ -29,7 +42,7 @@ client.on('messageCreate', async msg => {
 		const data = {
 			model: 'command-xlarge-nightly',
 			persona: 'cohere',
-			query:  chatModel(prompt),
+			query: chatModel(prompt),
 			session_id: 'chat-cae2aafb-836f-4496-b0f5-462758aa76bb-6cf497f0-e730-4729-a3b0-e8080edff122',
 		};
 		let text;
@@ -52,6 +65,8 @@ client.on('messageCreate', async msg => {
 			const jsonRes = await res.json();
 			text = jsonRes.reply;
 			sessionId = jsonRes.session_id;
+			const found = sessionIds.find(i => i.session_id === jsonRes.session_id);
+			if (!found) sessionIds.push({ session_id: jsonRes.session_id, title: prompt.substring(0, 100) });
 			console.log('Success:', JSON.stringify(jsonRes));
 		}
 		catch (error) {
