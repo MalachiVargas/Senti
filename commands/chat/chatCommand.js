@@ -1,6 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const cohere = require('cohere-ai');
 const { chatModel } = require('./chatModel');
+const { sessionIds } = require('../../sessionIds');
 
 cohere.init(process.env.COHERE);
 
@@ -8,13 +9,20 @@ const chatCommand = {
 	...new SlashCommandBuilder()
 		.setName('chat')
 		.setDescription('Have a chat...')
+		.addStringOption(option => option.setName('prompt').setDescription('Say anything...').setRequired(true))
 		.addStringOption(option =>
-			option.setName('prompt').setDescription('Say anything...').setRequired(true),
-		)
-		.addStringOption(option =>
-			option
-				.setName('session')
-				.setDescription('Input session id of existing chat')),
+			option.setName('session').setDescription('Input session id of existing chat').setAutocomplete(true),
+		),
+	async autocomplete(interaction) {
+		const focusedValue = interaction.options.getFocused();
+		const filtered = sessionIds.filter(choice => (choice && choice.sessionId && choice.sessionId.startsWith(focusedValue)) ||
+			(choice && choice.title && choice.title.startsWith(focusedValue)));
+
+		if (filtered.length > 0) {
+			await interaction.respond(filtered.map(choice => ({ name: choice.title, value: choice.session_id })));
+
+		}
+	},
 	async execute(interaction) {
 		await interaction.deferReply({
 			ephemeral: true,
@@ -27,15 +35,15 @@ const chatCommand = {
 			data = {
 				model: 'command-xlarge-nightly',
 				persona: 'cohere',
-				query:  chatModel(prompt),
+				query: chatModel(prompt),
 			};
 		}
 		else {
 			data = {
 				model: 'command-xlarge-nightly',
 				persona: 'cohere',
-				query:  chatModel(prompt),
-				session_id:  sessionId,
+				query: chatModel(prompt),
+				session_id: sessionId,
 			};
 		}
 		await fetch('https://api.cohere.ai/chat', {
@@ -43,12 +51,15 @@ const chatCommand = {
 			body: JSON.stringify(data),
 			headers: {
 				'Content-Type': 'application/json',
-				'Authorization': `Bearer ${process.env.COHERE}`,
+				Authorization: `Bearer ${process.env.COHERE}`,
 			},
-		}).then(res => res.json())
+		})
+			.then(res => res.json())
 			.then(res => {
 				text = res.reply;
 				sessionId = res.session_id;
+				const found = sessionIds.find(i => i.session_id === res.session_id);
+				if (!found) sessionIds.push({ session_id: res.session_id, title: prompt.substring(0, 100) });
 				console.log('Success:', JSON.stringify(res));
 			})
 			.catch(error => console.error('Error:', error));
