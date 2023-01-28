@@ -67,7 +67,6 @@ client.on('messageCreate', async msg => {
 			sessionId = jsonRes.session_id;
 			const found = sessionIds.find(i => i.session_id === jsonRes.session_id);
 			if (!found) sessionIds.push({ session_id: jsonRes.session_id, title: prompt.substring(0, 100) });
-
 			console.log('Success:', JSON.stringify(jsonRes));
 		}
 		catch (error) {
