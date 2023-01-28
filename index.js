@@ -5,7 +5,29 @@ const { client } = require('./utils/client');
 const keepAlive = require('./utils/server');
 const { cmds } = require('./commands');
 const { chatModel } = require('./commands/chat/chatModel');
-const { sessionIds } = require('./sessionIds');
+const { Users, Sessions } = require('./dbObjects.js');
+const { Collection } = require('discord.js');
+
+const sessions = new Collection();
+
+async function addSession(userId, sessionId, description) {
+	const user = sessions.get(userId);
+
+	if (user) {
+		user.sessionList.push({ sessionId, description });
+		return user.save();
+	}
+
+	const newUser = await Users.create({ user_id: userId, sessionList: [{ sessionId, description }] });
+	sessions.set(userId, newUser);
+
+	return newUser;
+}
+
+function getAllSessions(userId) {
+	const user = sessions.get(userId);
+	return user ? user.sessionList : [];
+}
 
 // Interaction Create Event
 client.on('interactionCreate', async interaction => {
@@ -39,6 +61,11 @@ client.on('messageCreate', async msg => {
 	if (msg.author.bot) return;
 	if (msg.channel.type == 1) {
 		const prompt = msg.content;
+		if () {
+
+		} else {
+			
+		}
 		const data = {
 			model: 'command-xlarge-nightly',
 			persona: 'cohere',
@@ -65,7 +92,7 @@ client.on('messageCreate', async msg => {
 			const jsonRes = await res.json();
 			text = jsonRes.reply;
 			sessionId = jsonRes.session_id;
-			const found = sessionIds.find(i => i.session_id === jsonRes.session_id);
+			const found = getAllSessions().find(i => i.session_id === jsonRes.session_id);
 			if (!found) sessionIds.push({ session_id: jsonRes.session_id, title: prompt.substring(0, 100) });
 			console.log('Success:', JSON.stringify(jsonRes));
 		}

@@ -1,2 +1,2 @@
-const sessionIds = [];
-exports.sessionIds = sessionIds;
+const sessionList = [];
+exports.sessionList = sessionList;
