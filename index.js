@@ -6,28 +6,13 @@ const keepAlive = require('./utils/server');
 const { cmds } = require('./commands');
 const { chatModel } = require('./commands/chat/chatModel');
 const { Users, Sessions } = require('./dbObjects.js');
-const { Collection } = require('discord.js');
+const { Events } = require('discord.js');
+const { currentSessionCache, setCurrentSession, getCurrentSession } = require('./helperMethods');
 
-const sessions = new Collection();
-
-async function addSession(userId, sessionId, description) {
-	const user = sessions.get(userId);
-
-	if (user) {
-		user.sessionList.push({ sessionId, description });
-		return user.save();
-	}
-
-	const newUser = await Users.create({ user_id: userId, sessionList: [{ sessionId, description }] });
-	sessions.set(userId, newUser);
-
-	return newUser;
-}
-
-function getAllSessions(userId) {
-	const user = sessions.get(userId);
-	return user ? user.sessionList : [];
-}
+client.once(Events.ClientReady, async () => {
+	const storedCurrentSessions = await Users.findAll();
+	storedCurrentSessions.forEach(cs => currentSessionCache.set(cs.user_id, cs));
+});
 
 // Interaction Create Event
 client.on('interactionCreate', async interaction => {
@@ -57,24 +42,37 @@ client.on('interactionCreate', async interaction => {
 	}
 });
 
+
 client.on('messageCreate', async msg => {
 	if (msg.author.bot) return;
 	if (msg.channel.type == 1) {
 		const prompt = msg.content;
-		if () {
-
-		} else {
-			
+		const target = msg.author;
+		// let user = await Users.findOne({ where: { user_id: target.id } });
+		// if (!user) {
+		// 	user = await Users.create({ user_id: target.id, current_session_id: null });
+		// }
+		// const currentSessionId = user.current_session_id;
+		let data;
+		const currentSessionId = await getCurrentSession(target.id);
+		if (currentSessionId) {
+			data = {
+				model: 'command-xlarge-nightly',
+				persona: 'cohere',
+				query: chatModel(prompt),
+				session_id: currentSessionId,
+			};
 		}
-		const data = {
-			model: 'command-xlarge-nightly',
-			persona: 'cohere',
-			query: chatModel(prompt),
-			session_id: 'chat-cae2aafb-836f-4496-b0f5-462758aa76bb-6cf497f0-e730-4729-a3b0-e8080edff122',
-		};
-		let text;
-		let sessionId;
+		else {
+			data = {
+				model: 'command-xlarge-nightly',
+				persona: 'cohere',
+				query: chatModel(prompt),
+			};
+		}
 
+		let text;
+		let desc;
 		try {
 			const res = await fetch('https://api.cohere.ai/chat', {
 				method: 'POST',
@@ -86,19 +84,37 @@ client.on('messageCreate', async msg => {
 			});
 
 			if (res.status !== 200) {
+				console.log(data);
 				throw new Error(`Error with API, status code: ${res.status}`);
 			}
 
 			const jsonRes = await res.json();
 			text = jsonRes.reply;
-			sessionId = jsonRes.session_id;
-			const found = getAllSessions().find(i => i.session_id === jsonRes.session_id);
-			if (!found) sessionIds.push({ session_id: jsonRes.session_id, title: prompt.substring(0, 100) });
+			if (!currentSessionId) {
+				setCurrentSession(target.id, jsonRes.session_id);
+			}
+
+			const sessions = await Sessions.findAll({
+				where: {
+					user_id: target.id,
+				},
+				defaultValue: [],
+			});
+
+			const found = sessions.find(i => i.session_id === jsonRes.session_id);
+			if (!found) {
+				const newSession = await Sessions.create({ user_id: target.id, session_id: jsonRes.session_id, description: prompt.substring(0, 50) });
+				desc = newSession.description;
+				sessions.push(newSession);
+			}
+			else {
+				desc = found.description;
+			}
 			console.log('Success:', JSON.stringify(jsonRes));
 		}
 		catch (error) {
 			console.error('Error:', error);
-			await msg.author.send('Error With express Please ReSubmit');
+			await msg.author.send('Error please resubmit');
 			return;
 		}
 
@@ -106,7 +122,7 @@ client.on('messageCreate', async msg => {
 			await msg.author.send('Error With chat please re-submit');
 		}
 		else {
-			await msg.author.send(`${text}\n${sessionId}`);
+			await msg.author.send(`Room name: ${desc}\n${text}\n${currentSessionId}\n`);
 		}
 		return;
 	}

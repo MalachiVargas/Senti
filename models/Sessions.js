@@ -6,7 +6,7 @@ module.exports = (sequelize, DataTypes) => {
 			allowNull: false,
 		},
 		description: {
-			type: DataTypes.String,
+			type: DataTypes.STRING,
 			allowNull: false,
 			'default': 'New chat',
 		},

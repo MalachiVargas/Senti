@@ -6,7 +6,6 @@ module.exports = (sequelize, DataTypes) => {
 		},
 		current_session_id: {
 			type: DataTypes.STRING,
-			allowNull: false,
 		},
 	}, {
 		timestamps: false,

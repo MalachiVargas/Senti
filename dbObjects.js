@@ -14,11 +14,11 @@ Sessions.belongsTo(Users, { foreignKey: 'user_id', as: 'user' });
 
 Reflect.defineProperty(Users.prototype, 'setCurrentSession', {
 	value: async session => {
-		const newSession = await Sessions.create({ user_id: this.user_id, session_id: session.session_id, description: session.description });
-		return newSession;
+		await Users.update({ current_session_id: session.session_id }, { where: { user_id: this.user_id } });
+		const updatedUser = await Users.findOne({ where: { user_id: this.user_id } });
+		return updatedUser;
 	},
 });
-
 
 Reflect.defineProperty(Sessions.prototype, 'addSession', {
 	value: async session => {
@@ -27,11 +27,12 @@ Reflect.defineProperty(Sessions.prototype, 'addSession', {
 	},
 });
 
+
 Reflect.defineProperty(Sessions.prototype, 'sessions', {
 	value: () => {
 		return Sessions.findAll({
 			where: { user_id: this.user_id },
-			include: ['session'],
+			include: ['user'],
 		});
 	},
 });
