@@ -48,11 +48,6 @@ client.on('messageCreate', async msg => {
 	if (msg.channel.type == 1) {
 		const prompt = msg.content;
 		const target = msg.author;
-		// let user = await Users.findOne({ where: { user_id: target.id } });
-		// if (!user) {
-		// 	user = await Users.create({ user_id: target.id, current_session_id: null });
-		// }
-		// const currentSessionId = user.current_session_id;
 		let data;
 		const currentSessionId = await getCurrentSession(target.id);
 		if (currentSessionId) {

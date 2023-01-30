@@ -5,7 +5,7 @@ const { Users } = require('./dbObjects.js');
 const currentSessionCache = new Collection();
 
 const setCurrentSession = async (userId, sessionId) => {
-	const user = currentSessionCache.get(userId);
+	const user = await getCurrentSession(userId);
 	console.log(user);
 	if (user) {
 		user.current_session_id = sessionId;
@@ -20,11 +20,11 @@ const setCurrentSession = async (userId, sessionId) => {
 
 const getCurrentSession = async (userId) => {
 	const user = currentSessionCache.get(userId);
-	if (user) {
-		return user.current_session_id;
+	if (!user) {
+		return null;
 	}
-	const newUser = await Users.create({ user_id: userId, current_session_id: null });
-	return newUser.current_session_id;
+
+	return user.current_session_id;
 };
 
 

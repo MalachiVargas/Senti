@@ -11,6 +11,7 @@ const Users = require('./models/Users.js')(sequelize, Sequelize.DataTypes);
 const Sessions = require('./models/Sessions.js')(sequelize, Sequelize.DataTypes);
 
 Sessions.belongsTo(Users, { foreignKey: 'user_id', as: 'user' });
+Users.hasMany(Sessions, { foreignKey: 'user_id', as: 'user' });
 
 Reflect.defineProperty(Users.prototype, 'setCurrentSession', {
 	value: async session => {

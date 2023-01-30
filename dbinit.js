@@ -24,7 +24,7 @@ sequelize.sync({ force }).then(async () => {
 	console.log('Users Created');
 
 	const sessionList = [
-		Sessions.upsert({ user_id: '243235850777919488', session_id: 'chat-cae2aafb-836f-4496-b0f5-462758aa76bb-dcfc3e07-7189-413e-a42f-68bb50df284f', description: 'Social Advice' }),
+		// Sessions.upsert({ user_id: '243235850777919488', session_id: 'chat-cae2aafb-836f-4496-b0f5-462758aa76bb-dcfc3e07-7189-413e-a42f-68bb50df284f', description: 'Social Advice' }),
 		Sessions.upsert({ user_id: '333750716675915776', session_id: 'chat-cae2aafb-836f-4496-b0f5-462758aa76bb-75a19881-dbf3-4b8b-bd52-9b8c51c2c797', description: 'Emotional Intelligence' }),
 	];
 
