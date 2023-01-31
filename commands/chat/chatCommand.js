@@ -2,8 +2,7 @@ const { SlashCommandBuilder } = require('discord.js');
 const cohere = require('cohere-ai');
 const { chatModel } = require('./chatModel');
 const { sessionIds } = require('../../sessionIds');
-const Sessions = require('../../dbObjects');
-const Users = require('../../dbObjects');
+const { Users, Sessions } = require('../../dbObjects');
 
 cohere.init(process.env.COHERE);
 
@@ -33,32 +32,22 @@ const chatCommand = {
 		const prompt = interaction.options.getString('prompt');
 		let sessionId = interaction.options.getString('session');
 		const target = interaction.user;
-		let text;
-		let data = {};
-		if (!sessionId) {
-			data = {
-				model: 'command-xlarge-nightly',
-				persona: 'cohere',
-				query: chatModel(prompt),
-			};
-		}
-		else {
-			data = {
-				model: 'command-xlarge-nightly',
-				persona: 'cohere',
-				query: chatModel(prompt),
-				session_id: sessionId,
-			};
-		}
+		const data = {
+			'value': chatModel(prompt),
+			// eslint-disable-next-line quotes
+			'chatroom_id': sessionId ?? "",
+			'user_id': target.id,
+		};
+
 		let desc;
+		let text;
 		try {
-			const res = await fetch('https://api.cohere.ai/chat', {
+			const res = await fetch('https://SentiBot.malachivargas.repl.co/chat', {
 				method: 'POST',
-				body: JSON.stringify(data),
 				headers: {
 					'Content-Type': 'application/json',
-					'Authorization': `Bearer ${process.env.COHERE}`,
 				},
+				body: JSON.stringify(data),
 			});
 
 			if (res.status !== 200) {
@@ -66,10 +55,13 @@ const chatCommand = {
 				throw new Error(`Error with API, status code: ${res.status}`);
 			}
 
-			const jsonRes = await res.json();
-			text = jsonRes.reply;
+			const jsonRes = await res.text();
+			const response = JSON.parse(jsonRes);
+			const { reply, chatroom_id } = response.body;
+			text = reply;
+			console.log(reply, chatroom_id);
 			if (!sessionId) {
-				Users.update({ current_session_id: jsonRes.session_id }, { where: { user_id: target.id } })
+				await Users.update({ current_session_id: chatroom_id }, { where: { user_id: target.id } })
 					.then(() => {
 						console.log('Record updated successfully!');
 					})
@@ -84,17 +76,17 @@ const chatCommand = {
 				},
 				defaultValue: [],
 			});
-			const found = sessions.find(i => i.session_id === jsonRes.session_id);
+			const found = sessions.find(i => i.session_id === chatroom_id);
 			if (!found) {
-				const newSession = await Sessions.create({ user_id: target.id, session_id: jsonRes.session_id, description: prompt.substring(0, 50) });
+				const newSession = await Sessions.create({ user_id: target.id, session_id: chatroom_id, description: prompt.substring(0, 50) });
 				desc = newSession.description;
-				sessionId = jsonRes.session_id;
+				sessionId = chatroom_id;
 				sessions.push(newSession);
 			}
 			else {
 				desc = found.description;
 			}
-			console.log('Success:', JSON.stringify(jsonRes));
+			console.log('Success:', JSON.stringify(response));
 		}
 		catch (error) {
 			await interaction.editReply({

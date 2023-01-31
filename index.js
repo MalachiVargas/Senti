@@ -48,34 +48,22 @@ client.on('messageCreate', async msg => {
 	if (msg.channel.type == 1) {
 		const prompt = msg.content;
 		const target = msg.author;
-		let data;
 		const currentSessionId = await getCurrentSession(target.id);
-		if (currentSessionId) {
-			data = {
-				model: 'command-xlarge-nightly',
-				persona: 'cohere',
-				query: chatModel(prompt),
-				session_id: currentSessionId,
-			};
-		}
-		else {
-			data = {
-				model: 'command-xlarge-nightly',
-				persona: 'cohere',
-				query: chatModel(prompt),
-			};
-		}
-
+		const data = {
+			'value': chatModel(prompt),
+			// eslint-disable-next-line quotes
+			'chatroom_id': currentSessionId ?? "",
+			'user_id': target.id,
+		};
 		let text;
 		let desc;
 		try {
-			const res = await fetch('https://api.cohere.ai/chat', {
+			const res = await fetch('https://SentiBot.malachivargas.repl.co/chat', {
 				method: 'POST',
-				body: JSON.stringify(data),
 				headers: {
 					'Content-Type': 'application/json',
-					'Authorization': `Bearer ${process.env.COHERE}`,
 				},
+				body: JSON.stringify(data),
 			});
 
 			if (res.status !== 200) {
@@ -83,10 +71,12 @@ client.on('messageCreate', async msg => {
 				throw new Error(`Error with API, status code: ${res.status}`);
 			}
 
-			const jsonRes = await res.json();
-			text = jsonRes.reply;
+			const jsonRes = await res.text();
+			const response = JSON.parse(jsonRes);
+			const { reply, chatroom_id } = response.body;
+			text = reply;
 			if (!currentSessionId) {
-				setCurrentSession(target.id, jsonRes.session_id);
+				setCurrentSession(target.id, chatroom_id);
 			}
 
 			const sessions = await Sessions.findAll({
@@ -96,16 +86,16 @@ client.on('messageCreate', async msg => {
 				defaultValue: [],
 			});
 
-			const found = sessions.find(i => i.session_id === jsonRes.session_id);
+			const found = sessions.find(i => i.session_id === chatroom_id);
 			if (!found) {
-				const newSession = await Sessions.create({ user_id: target.id, session_id: jsonRes.session_id, description: prompt.substring(0, 50) });
+				const newSession = await Sessions.create({ user_id: target.id, session_id: chatroom_id, description: prompt.substring(0, 50) });
 				desc = newSession.description;
 				sessions.push(newSession);
 			}
 			else {
 				desc = found.description;
 			}
-			console.log('Success:', JSON.stringify(jsonRes));
+			console.log('Success:', JSON.stringify(response));
 		}
 		catch (error) {
 			console.error('Error:', error);
