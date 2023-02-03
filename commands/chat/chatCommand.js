@@ -1,8 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const cohere = require('cohere-ai');
 const { chatModel } = require('./chatModel');
-const { sessionIds } = require('../../sessionIds');
-const { Users, Sessions } = require('../../dbObjects');
+const { fetchSessions } = require('../../utils/fetchSessions');
 
 cohere.init(process.env.COHERE);
 
@@ -16,6 +15,7 @@ const chatCommand = {
 			option.setName('session').setDescription('Input session id of existing chat').setAutocomplete(true),
 		),
 	async autocomplete(interaction) {
+		const sessionIds = await fetchSessions(interaction.user);
 		const focusedValue = interaction.options.getFocused();
 		const filtered = sessionIds.filter(choice => (choice && choice.sessionId && choice.sessionId.startsWith(focusedValue)) ||
 			(choice && choice.title && choice.title.startsWith(focusedValue)));
@@ -30,7 +30,7 @@ const chatCommand = {
 			ephemeral: true,
 		});
 		const prompt = interaction.options.getString('prompt');
-		let sessionId = interaction.options.getString('session');
+		const sessionId = interaction.options.getString('session');
 		const target = interaction.user;
 		const data = {
 			'value': chatModel(prompt),
@@ -38,8 +38,6 @@ const chatCommand = {
 			'chatroom_id': sessionId ?? "",
 			'user_id': target.id,
 		};
-
-		let desc;
 		let text;
 		try {
 			const res = await fetch('https://SentiBot.malachivargas.repl.co/chat', {
@@ -60,32 +58,7 @@ const chatCommand = {
 			const { reply, chatroom_id } = response.body;
 			text = reply;
 			console.log(reply, chatroom_id);
-			if (!sessionId) {
-				await Users.update({ current_session_id: chatroom_id }, { where: { user_id: target.id } })
-					.then(() => {
-						console.log('Record updated successfully!');
-					})
-					.catch((error) => {
-						console.error('Error updating record:', error);
-					});
-			}
 
-			const sessions = await Sessions.findAll({
-				where: {
-					user_id: target.id,
-				},
-				defaultValue: [],
-			});
-			const found = sessions.find(i => i.session_id === chatroom_id);
-			if (!found) {
-				const newSession = await Sessions.create({ user_id: target.id, session_id: chatroom_id, description: prompt.substring(0, 50) });
-				desc = newSession.description;
-				sessionId = chatroom_id;
-				sessions.push(newSession);
-			}
-			else {
-				desc = found.description;
-			}
 			console.log('Success:', JSON.stringify(response));
 		}
 		catch (error) {
@@ -102,7 +75,7 @@ const chatCommand = {
 		}
 		else {
 			await interaction.editReply({
-				content: `${text}\n${sessionId}\n${desc}`,
+				content: `${text}\n\n${sessionId}}`,
 			});
 		}
 	},

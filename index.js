@@ -5,14 +5,8 @@ const { client } = require('./utils/client');
 const keepAlive = require('./utils/server');
 const { cmds } = require('./commands');
 const { chatModel } = require('./commands/chat/chatModel');
-const { Users, Sessions } = require('./dbObjects.js');
-const { Events } = require('discord.js');
-const { currentSessionCache, setCurrentSession, getCurrentSession } = require('./helperMethods');
+const { fetchCurrentSession } = require('./utils/fetchCurrentSession');
 
-client.once(Events.ClientReady, async () => {
-	const storedCurrentSessions = await Users.findAll();
-	storedCurrentSessions.forEach(cs => currentSessionCache.set(cs.user_id, cs));
-});
 
 // Interaction Create Event
 client.on('interactionCreate', async interaction => {
@@ -48,7 +42,7 @@ client.on('messageCreate', async msg => {
 	if (msg.channel.type == 1) {
 		const prompt = msg.content;
 		const target = msg.author;
-		const currentSessionId = await getCurrentSession(target.id);
+		let currentSessionId = await fetchCurrentSession(target);
 		const data = {
 			'value': chatModel(prompt),
 			// eslint-disable-next-line quotes
@@ -56,7 +50,6 @@ client.on('messageCreate', async msg => {
 			'user_id': target.id,
 		};
 		let text;
-		let desc;
 		try {
 			const res = await fetch('https://SentiBot.malachivargas.repl.co/chat', {
 				method: 'POST',
@@ -74,27 +67,9 @@ client.on('messageCreate', async msg => {
 			const jsonRes = await res.text();
 			const response = JSON.parse(jsonRes);
 			const { reply, chatroom_id } = response.body;
+			currentSessionId = chatroom_id;
 			text = reply;
-			if (!currentSessionId) {
-				setCurrentSession(target.id, chatroom_id);
-			}
 
-			const sessions = await Sessions.findAll({
-				where: {
-					user_id: target.id,
-				},
-				defaultValue: [],
-			});
-
-			const found = sessions.find(i => i.session_id === chatroom_id);
-			if (!found) {
-				const newSession = await Sessions.create({ user_id: target.id, session_id: chatroom_id, description: prompt.substring(0, 50) });
-				desc = newSession.description;
-				sessions.push(newSession);
-			}
-			else {
-				desc = found.description;
-			}
 			console.log('Success:', JSON.stringify(response));
 		}
 		catch (error) {
@@ -107,7 +82,7 @@ client.on('messageCreate', async msg => {
 			await msg.author.send('Error With chat please re-submit');
 		}
 		else {
-			await msg.author.send(`Room name: ${desc}\n${text}\n${currentSessionId}\n`);
+			await msg.author.send(`${text}\n${currentSessionId}\n`);
 		}
 		return;
 	}

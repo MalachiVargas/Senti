@@ -30,9 +30,9 @@ const expressCommand = {
 		let data = {};
 		if (!sessionId) {
 			data = {
-				model: 'command-xlarge-nightly',
-				persona: 'cohere',
-				query:  expressChatModel(convo, context),
+				value_list:  [convo, context],
+				chatroom_id: 'command-xlarge-nightly',
+				user_id: 'cohere',
 			};
 		}
 		else {
